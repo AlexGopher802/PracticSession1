@@ -53,7 +53,7 @@ namespace Session1
 
         void viewActiveInfo()
         {
-            int allSeconds = 0;
+            TimeSpan allSeconds = new TimeSpan();
             int crashes = 0;
             foreach(DataGridViewRow i in dataGridViewActive.Rows)
             {
@@ -65,7 +65,7 @@ namespace Session1
                 }
                 else
                 {
-                    allSeconds += (int)i.Cells["Time in System"].Value;
+                    allSeconds = allSeconds.Add(TimeSpan.Parse(i.Cells["Time in System"].Value.ToString()));
                 }
             }
             lblTimeInSystem.Text = $"{lblTimeInSystem.Text}: {allSeconds}s";
@@ -89,12 +89,10 @@ namespace Session1
 
         private void UserForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            string query = $"update top (1) tracking set LogoutDateTime = '{DateTime.Now}' where id = (select top (1) id from tracking where userid=(select id from users where email='{emailUser}') order by id desc) " +
-                $"update top (1) tracking set TimeInSystem = DATEDIFF(SS, [LoginDateTime], [LogoutDateTime]) where id = (select top (1) id from tracking where userid=(select id from users where email='{emailUser}') order by id desc)";
-            
-            myClass.executeQuery(query);
+            myClass.executeQuery($"update top(1) tracking set LogoutDateTime = '{DateTime.Now}' where id = (select top(1) id from tracking where userid = (select id from users where email = '{emailUser}') order by id desc)");
+            DataSet ds = myClass.getData($"select DATEDIFF(SS, [LoginDateTime], [LogoutDateTime]) from tracking where id = (select top (1) id from tracking where userid=(select id from users where email='{emailUser}') order by id desc)");
+            TimeSpan ts = TimeSpan.FromSeconds((int)ds.Tables[0].Rows[0].ItemArray[0]);
+            myClass.executeQuery($"update top (1) tracking set TimeInSystem='{ts}' where id = (select top (1) id from tracking where userid=(select id from users where email='{emailUser}') order by id desc)");
         }
-
-
     }
 }
